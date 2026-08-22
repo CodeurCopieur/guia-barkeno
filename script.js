@@ -298,12 +298,16 @@ function speakText(text,lang){
 
 async function translateText(text,from,to){
   const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
-  const r=await fetch(url);
-  if(!r.ok)throw new Error("http "+r.status);
-  const j=await r.json();
-  const t=j&&j.responseData&&j.responseData.translatedText;
-  if(!t||/MYMEMORY WARNING/i.test(t))throw new Error("no translation");
-  return t;
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const r=await fetch(url,{signal:ctl.signal});
+    if(!r.ok)throw new Error("http "+r.status);
+    const j=await r.json();
+    const t=j&&j.responseData&&j.responseData.translatedText;
+    if(!t||/MYMEMORY WARNING/i.test(t))throw new Error("no translation");
+    return t;
+  }finally{clearTimeout(timer)}
 }
 
 function initTranslator(){
@@ -390,13 +394,20 @@ function initTranslator(){
           const t=e.results[i][0].transcript;
           e.results[i].isFinal?finalText+=t+" ":interim+=t;
         }
-        heard.textContent=(finalText+interim).trim()||"…";
-        if(finalText.trim())armSilence();
+        const full=(finalText+interim).trim();
+        heard.textContent=full||"…";
+        if(full)armSilence();
       };
       recognition.onerror=e=>{
-        if(["not-allowed","service-not-allowed","audio-capture"].includes(e.error)){
-          fatal=true;status.textContent="Micro indisponible pour la transcription.";
-        }
+        const msgs={
+          "not-allowed":"Micro refusé pour la transcription.",
+          "service-not-allowed":"Service de reconnaissance vocale indisponible.",
+          "audio-capture":"Micro indisponible.",
+          "network":"Réseau bloqué : la reconnaissance vocale nécessite Internet.",
+          "no-speech":"Aucune voix détectée."
+        };
+        if(msgs[e.error])status.textContent=msgs[e.error];
+        if(["not-allowed","service-not-allowed","audio-capture","network"].includes(e.error))fatal=true;
       };
       recognition.onend=()=>{
         if(recording&&!fatal&&recognition){try{recognition.start()}catch(e){}}
@@ -416,8 +427,10 @@ function initTranslator(){
     if(recognition){try{recognition.stop()}catch(e){}recognition=null}
     if(recorder&&recorder.state!=="inactive")recorder.stop();
     recorder=null;
-    const txt=finalText.trim();
+    const heardTxt=heard.textContent.trim();
+    const txt=finalText.trim()||(heardTxt&&heardTxt!=="…"?heardTxt:"");
     if(txt)doTranslate(txt);
+    else status.textContent="Aucune phrase détectée — réessayez ou écrivez-la ci-dessous.";
   }
 
   recBtn.onclick=()=>recording?stopRec():startRec();
