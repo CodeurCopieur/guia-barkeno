@@ -25,6 +25,35 @@
 </div>
 
 <main>
+  <section class="translator">
+    <h2>🎤 Traducteur vocal</h2>
+    <div class="t-card">
+      <div class="t-langs">
+        <select id="srcLang" aria-label="Langue source"></select>
+        <button id="swapLangs" type="button" class="btn" aria-label="Inverser les langues">⇄</button>
+        <select id="dstLang" aria-label="Langue cible"></select>
+      </div>
+      <button id="recBtn" type="button" class="rec-btn">🎤 Appuyer pour parler</button>
+      <p class="t-status" id="recStatus"></p>
+      <audio id="playback" controls hidden></audio>
+      <div class="t-result" id="tResult" hidden>
+        <div class="t-row">
+          <p class="t-heard" id="heardText"></p>
+          <button class="btn say" id="sayHeard" aria-label="Écouter la phrase entendue"></button>
+        </div>
+        <div class="t-row">
+          <p class="t-translated" id="translatedText"></p>
+          <button class="btn say" id="sayTranslated" aria-label="Écouter la traduction"></button>
+        </div>
+      </div>
+      <div class="t-manual">
+        <input id="manualText" type="text" placeholder="…ou tapez une phrase à traduire" autocomplete="off">
+        <button id="translateBtn" type="button">Traduire</button>
+      </div>
+      <p class="t-note" id="tNote"></p>
+    </div>
+  </section>
+
   <p class="count" id="count"></p>
   <div id="content"></div>
 </main>

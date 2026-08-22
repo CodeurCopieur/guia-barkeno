@@ -152,6 +152,82 @@ section h2 .n{
 }
 @keyframes pulse{50%{transform:scale(1.08)}}
 mark{background:rgba(237,187,0,.32);color:#ffe9a0;border-radius:3px;padding:0 2px}
+.translator{margin-top:26px}
+.translator h2{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.15rem;font-weight:700;
+  padding-left:4px;
+}
+.t-card{
+  margin-top:14px;
+  display:flex;flex-direction:column;gap:12px;
+  background:linear-gradient(180deg,var(--card-hi),var(--card));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px 16px;
+}
+.t-langs{display:flex;align-items:center;gap:8px}
+.t-langs select{
+  flex:1;min-width:0;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
+  color:var(--text);
+  font-size:.95rem;font-weight:600;
+  outline:none;cursor:pointer;
+}
+.t-langs select:focus{border-color:var(--gold)}
+.t-langs .btn{width:38px;height:38px;font-size:1rem}
+.rec-btn{
+  padding:16px;
+  border:none;border-radius:999px;
+  background:linear-gradient(135deg,var(--garnet),#c81e5a);
+  color:#fff;
+  font-size:1.05rem;font-weight:700;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.rec-btn:hover{box-shadow:0 6px 20px rgba(165,0,68,.45)}
+.rec-btn:active{transform:scale(.98)}
+.rec-btn.recording{
+  background:linear-gradient(135deg,#d21f3c,#ff5470);
+  animation:pulse 1s ease infinite;
+}
+.t-status{text-align:center;color:var(--muted);font-size:.85rem;min-height:1.2em}
+.t-card audio{width:100%;border-radius:10px}
+.t-result{
+  display:flex;flex-direction:column;gap:8px;
+  border-top:1px solid var(--line);
+  padding-top:12px;
+}
+.t-row{display:flex;gap:10px;align-items:flex-start}
+.t-row p{flex:1;min-width:0}
+.t-heard{color:var(--text);font-weight:600;font-style:italic}
+.t-translated{
+  color:var(--gold);font-weight:700;font-size:1.08rem;
+}
+.t-manual{display:flex;gap:8px}
+.t-manual input{
+  flex:1;min-width:0;
+  padding:11px 14px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
+  font-size:.95rem;
+  outline:none;
+}
+.t-manual input:focus{border-color:var(--gold)}
+.t-manual button{
+  padding:0 18px;
+  border:none;border-radius:999px;
+  background:linear-gradient(135deg,var(--gold),#f5cf4d);
+  color:#201800;
+  font-weight:700;font-size:.92rem;
+  cursor:pointer;
+}
+.t-note{text-align:center;color:var(--muted);font-size:.78rem}
 .empty{
   text-align:center;padding:70px 20px;color:var(--muted);
 }

@@ -279,6 +279,151 @@ si.addEventListener("input",()=>{
 ci.onclick=()=>{si.value="";state.q="";ci.style.display="none";si.focus();render()};
 if("speechSynthesis" in window)speechSynthesis.getVoices();
 
+const LANGS={
+  fr:{label:"🇫🇷 Français",locale:"fr-FR"},
+  es:{label:"🇪🇸 Español",locale:"es-ES"},
+  ca:{label:"Català",locale:"ca-ES"}
+};
+
+function speakText(text,lang){
+  if(!("speechSynthesis" in window))return;
+  window.speechSynthesis.cancel();
+  document.querySelectorAll(".say.playing").forEach(b=>b.classList.remove("playing"));
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=lang;u.rate=.85;
+  const v=speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith(lang.slice(0,2)));
+  if(v)u.voice=v;
+  speechSynthesis.speak(u);
+}
+
+async function translateText(text,from,to){
+  const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
+  const r=await fetch(url);
+  if(!r.ok)throw new Error("http "+r.status);
+  const j=await r.json();
+  const t=j&&j.responseData&&j.responseData.translatedText;
+  if(!t||/MYMEMORY WARNING/i.test(t))throw new Error("no translation");
+  return t;
+}
+
+function initTranslator(){
+  const srcSel=$("#srcLang"),dstSel=$("#dstLang"),recBtn=$("#recBtn"),
+        status=$("#recStatus"),playback=$("#playback"),tResult=$("#tResult"),
+        heard=$("#heardText"),translatedEl=$("#translatedText"),note=$("#tNote");
+  Object.entries(LANGS).forEach(([code,l])=>{
+    srcSel.add(new Option(l.label,code));
+    dstSel.add(new Option(l.label,code));
+  });
+  srcSel.value="fr";dstSel.value="es";
+  $("#sayHeard").innerHTML=ICON_SPEAK;
+  $("#sayTranslated").innerHTML=ICON_SPEAK;
+
+  $("#swapLangs").onclick=()=>{[srcSel.value,dstSel.value]=[dstSel.value,srcSel.value]};
+  $("#sayHeard").onclick=()=>speakText(heard.textContent,LANGS[srcSel.value].locale);
+
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  let recording=false,stream=null,recorder=null,chunks=[],recognition=null,
+      finalText="",fatal=false;
+
+  function reset(){
+    tResult.hidden=true;heard.textContent="";translatedEl.textContent="";
+    playback.hidden=true;playback.removeAttribute("src");note.textContent="";
+  }
+
+  async function doTranslate(text){
+    heard.textContent=text;
+    translatedEl.textContent="…";
+    tResult.hidden=false;
+    try{
+      translatedEl.textContent=await translateText(text,srcSel.value,dstSel.value);
+      $("#sayTranslated").onclick=()=>speakText(translatedEl.textContent,LANGS[dstSel.value].locale);
+    }catch(e){
+      translatedEl.textContent="Traduction indisponible pour le moment 😕";
+    }
+  }
+
+  async function startRec(){
+    reset();
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    }catch(e){
+      status.textContent="Micro inaccessible : autorisez le micro dans le navigateur.";
+      return;
+    }
+    chunks=[];finalText="";fatal=false;
+    try{
+      recorder=new MediaRecorder(stream);
+      recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+      recorder.onstop=()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        stream=null;
+        if(chunks.length){
+          playback.src=URL.createObjectURL(new Blob(chunks,{type:recorder.mimeType||"audio/webm"}));
+          playback.hidden=false;
+        }
+      };
+      recorder.start();
+    }catch(e){
+      status.textContent="Enregistrement audio non supporté par ce navigateur.";
+      return;
+    }
+    recording=true;
+    recBtn.classList.add("recording");
+    recBtn.textContent="⏹ Arrêter et traduire";
+    status.textContent=SR?"J'écoute… Parlez maintenant.":"Enregistrement… (transcription non supportée ici, essayez Chrome)";
+    if(SR){
+      recognition=new SR();
+      recognition.lang=LANGS[srcSel.value].locale;
+      recognition.interimResults=true;
+      recognition.continuous=true;
+      heard.textContent="…";
+      tResult.hidden=false;
+      recognition.onresult=e=>{
+        let interim="";
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          const t=e.results[i][0].transcript;
+          e.results[i].isFinal?finalText+=t+" ":interim+=t;
+        }
+        heard.textContent=(finalText+interim).trim()||"…";
+      };
+      recognition.onerror=e=>{
+        if(["not-allowed","service-not-allowed","audio-capture"].includes(e.error)){
+          fatal=true;status.textContent="Micro indisponible pour la transcription.";
+        }
+      };
+      recognition.onend=()=>{
+        if(recording&&!fatal&&recognition){try{recognition.start()}catch(e){}}
+      };
+      try{recognition.start()}catch(e){}
+    }else{
+      note.textContent="La transcription vocale nécessite Chrome ou Edge. Vous pouvez aussi taper votre phrase ci-dessous.";
+    }
+  }
+
+  function stopRec(){
+    recording=false;
+    recBtn.classList.remove("recording");
+    recBtn.textContent="🎤 Appuyer pour parler";
+    status.textContent="";
+    if(recognition){try{recognition.stop()}catch(e){}recognition=null}
+    if(recorder&&recorder.state!=="inactive")recorder.stop();
+    recorder=null;
+    const txt=finalText.trim();
+    if(txt)doTranslate(txt);
+  }
+
+  recBtn.onclick=()=>recording?stopRec():startRec();
+
+  const manual=$("#manualText");
+  const submitManual=()=>{
+    const v=manual.value.trim();
+    if(v){reset();manual.value="";doTranslate(v)}
+  };
+  $("#translateBtn").onclick=submitManual;
+  manual.addEventListener("keydown",e=>{if(e.key==="Enter")submitManual()});
+}
+
 initNav();
 initWheel();
 render();
+initTranslator();
