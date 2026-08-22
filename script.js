@@ -323,7 +323,12 @@ function initTranslator(){
 
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   let recording=false,stream=null,recorder=null,chunks=[],recognition=null,
-      finalText="",fatal=false;
+      finalText="",fatal=false,silenceTimer=null;
+
+  const armSilence=()=>{
+    clearTimeout(silenceTimer);
+    silenceTimer=setTimeout(()=>{if(recording)stopRec()},1500);
+  };
 
   function reset(){
     tResult.hidden=true;heard.textContent="";translatedEl.textContent="";
@@ -351,18 +356,19 @@ function initTranslator(){
       return;
     }
     chunks=[];finalText="";fatal=false;
+    clearTimeout(silenceTimer);
     try{
       recorder=new MediaRecorder(stream);
-      recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-      recorder.onstop=()=>{
-        stream.getTracks().forEach(t=>t.stop());
-        stream=null;
+      const mr=recorder;
+      mr.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+      mr.onstop=()=>{
+        if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
         if(chunks.length){
-          playback.src=URL.createObjectURL(new Blob(chunks,{type:recorder.mimeType||"audio/webm"}));
+          playback.src=URL.createObjectURL(new Blob(chunks,{type:mr.mimeType||"audio/webm"}));
           playback.hidden=false;
         }
       };
-      recorder.start();
+      mr.start();
     }catch(e){
       status.textContent="Enregistrement audio non supporté par ce navigateur.";
       return;
@@ -370,7 +376,7 @@ function initTranslator(){
     recording=true;
     recBtn.classList.add("recording");
     recBtn.textContent="⏹ Arrêter et traduire";
-    status.textContent=SR?"J'écoute… Parlez maintenant.":"Enregistrement… (transcription non supportée ici, essayez Chrome)";
+    status.textContent=SR?"J'écoute… La traduction partira dès que vous vous taisez.":"Enregistrement… (transcription non supportée ici, essayez Chrome)";
     if(SR){
       recognition=new SR();
       recognition.lang=LANGS[srcSel.value].locale;
@@ -385,6 +391,7 @@ function initTranslator(){
           e.results[i].isFinal?finalText+=t+" ":interim+=t;
         }
         heard.textContent=(finalText+interim).trim()||"…";
+        if(finalText.trim())armSilence();
       };
       recognition.onerror=e=>{
         if(["not-allowed","service-not-allowed","audio-capture"].includes(e.error)){
@@ -402,6 +409,7 @@ function initTranslator(){
 
   function stopRec(){
     recording=false;
+    clearTimeout(silenceTimer);
     recBtn.classList.remove("recording");
     recBtn.textContent="🎤 Appuyer pour parler";
     status.textContent="";
