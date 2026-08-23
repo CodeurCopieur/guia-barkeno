@@ -297,6 +297,9 @@ mark{background:rgba(237,187,0,.32);color:#ffe9a0;border-radius:3px;padding:0 2p
   100%{background:var(--bg-soft);border-color:var(--line)}
 }
 .h-texts{flex:1;min-width:0}
+.h-line{display:flex;gap:8px;align-items:flex-start}
+.h-say{width:26px;height:26px;border-radius:8px;flex-shrink:0;margin-top:1px}
+.h-say svg{width:13px;height:13px}
 .h-src{font-weight:600;font-size:.9rem;word-break:break-word}
 .h-dst{color:var(--gold);font-weight:600;font-size:.88rem;margin-top:3px;word-break:break-word}
 .h-del{

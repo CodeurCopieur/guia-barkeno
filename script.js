@@ -267,6 +267,8 @@ function initNav(){
       c.pick();
       sync();
       render();
+      const acc=$("#translatorAcc");
+      if(acc)acc.open=false;
     });
     nav.appendChild(b);
   });
@@ -382,14 +384,19 @@ const LANGS={
   ca:{label:"Català",locale:"ca-ES"}
 };
 
-function speakText(text,lang){
+function speakText(text,lang,btn){
   if(!("speechSynthesis" in window))return;
   window.speechSynthesis.cancel();
-  document.querySelectorAll(".say.playing").forEach(b=>b.classList.remove("playing"));
+  document.querySelectorAll(".say.playing,.h-say.playing").forEach(b=>b.classList.remove("playing"));
   const u=new SpeechSynthesisUtterance(text);
   u.lang=lang;u.rate=.85;
   const v=speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith(lang.slice(0,2)));
   if(v)u.voice=v;
+  if(btn){
+    btn.classList.add("playing");
+    u.onend=()=>btn.classList.remove("playing");
+    u.onerror=()=>btn.classList.remove("playing");
+  }
   speechSynthesis.speak(u);
 }
 
@@ -539,8 +546,14 @@ function initTranslator(){
     histList.innerHTML=hist.map((h,i)=>`
       <div class="h-item">
         <div class="h-texts">
-          <p class="h-src">${esc2(h.src)}</p>
-          <p class="h-dst">${esc2(h.dst)}</p>
+          <div class="h-line">
+            <button type="button" class="btn h-say" data-i="${i}" data-part="src" aria-label="Écouter en ${LANGS[h.from]?LANGS[h.from].label:h.from}">${ICON_SPEAK}</button>
+            <p class="h-src">${esc2(h.src)}</p>
+          </div>
+          <div class="h-line">
+            <button type="button" class="btn h-say" data-i="${i}" data-part="dst" aria-label="Écouter la traduction">${ICON_SPEAK}</button>
+            <p class="h-dst">${esc2(h.dst)}</p>
+          </div>
         </div>
         <button type="button" class="btn h-del" data-i="${i}" aria-label="Supprimer cette traduction">×</button>
       </div>`).join("");
@@ -556,10 +569,21 @@ function initTranslator(){
 
   histList.addEventListener("click",e=>{
     const del=e.target.closest(".h-del");
-    if(!del)return;
-    hist.splice(+del.dataset.i,1);
-    saveHist();
-    renderHist();
+    if(del){
+      hist.splice(+del.dataset.i,1);
+      saveHist();
+      renderHist();
+      return;
+    }
+    const say=e.target.closest(".h-say");
+    if(say){
+      const item=hist[+say.dataset.i];
+      if(!item)return;
+      const isSrc=say.dataset.part==="src";
+      const code=isSrc?item.from:item.to;
+      const lang=LANGS[code]?LANGS[code].locale:(code==="ca"?"ca-ES":code);
+      speakText(isSrc?item.src:item.dst,lang,say);
+    }
   });
 
   histClear.onclick=()=>{
