@@ -45,6 +45,9 @@ const THEMES=[
   ["Hablemos despacio, por favor","Parlons lentement, s'il vous plaît"]
  ]},
  {id:"langue",icon:"🗣️",name:"Se faire comprendre",phrases:[
+  ["Tengo una pregunta","J'ai une question"],
+  ["Tenemos otra pregunta","On a encore une question"],
+  ["¿Puedo enseñarles mi pregunta? Mi español no es muy bueno","Puis-je vous montrer ma question ? Mon espagnol n'est pas très bon"],
   ["Hablamos solo un poco de español","Nous ne parlons qu'un peu l'espagnol"],
   ["No hablamos bien español","Nous ne parlons pas très bien espagnol"],
   ["Lo siento, nuestro español es malo","Désolé, notre espagnol est mauvais"],
@@ -186,7 +189,7 @@ const ICON_NEXT='<svg viewBox="0 0 24 24"><path d="M8.5 4l8 8-8 8z"/></svg>';
 const PER_SLIDE=3;
 const chunk=(arr,n)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out};
 
-const state={theme:"all",favOnly:false,q:""};
+const state={theme:"none",favOnly:false,q:""};
 let favs=new Set(JSON.parse(localStorage.getItem("barcelone-favs")||"[]"));
 
 const $=s=>document.querySelector(s);
@@ -229,13 +232,12 @@ function toggleFav(key,btn){
 }
 
 const CHIPS=[
- {label:"🌍 Tout",pick(){state.theme="all";state.favOnly=false},is:()=>state.theme==="all"&&!state.favOnly},
- ...THEMES.map(t=>({
-   label:`${t.icon} ${t.name}`,
-   pick(){state.theme=t.id;state.favOnly=false},
-   is:()=>state.theme===t.id&&!state.favOnly
- })),
- {label:"⭐ Favoris",pick(){state.theme="all";state.favOnly=true},is:()=>state.favOnly}
+  ...THEMES.map(t=>({
+    label:`${t.icon} ${t.name}`,
+    pick(){state.theme=t.id;state.favOnly=false},
+    is:()=>state.theme===t.id&&!state.favOnly
+  })),
+  {label:"⭐ Favoris",pick(){state.theme="all";state.favOnly=true},is:()=>state.favOnly}
 ];
 
 function initNav(){
@@ -269,8 +271,14 @@ function initWheel(){
 
 function render(){
   let total=0,html="";
+  const searching=!!state.q;
+  if(state.theme==="none"&&!searching&&!state.favOnly){
+    $("#content").innerHTML=`<div class="empty"><div class="big">👆</div>Choisissez un thème ci-dessus<br>pour afficher les phrases.</div>`;
+    $("#count").textContent="";
+    return;
+  }
+  const showAll=searching||state.theme==="all";
   THEMES.forEach(theme=>{
-    const showAll=state.theme==="all";
     if(!showAll&&state.theme!==theme.id)return;
     const rows=[];
     theme.phrases.forEach((p,idx)=>{
