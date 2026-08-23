@@ -396,7 +396,7 @@ function speakText(text,lang){
 async function translateViaGoogle(text,from,to){
   const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
   const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),6000);
+  const timer=setTimeout(()=>ctl.abort(),10000);
   try{
     const r=await fetch(url,{signal:ctl.signal});
     if(!r.ok)throw new Error("http "+r.status);
@@ -410,7 +410,7 @@ async function translateViaGoogle(text,from,to){
 async function translateViaGoogleMirror(text,from,to){
   const url=`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&q=${encodeURIComponent(text)}`;
   const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),6000);
+  const timer=setTimeout(()=>ctl.abort(),10000);
   try{
     const r=await fetch(url,{signal:ctl.signal});
     if(!r.ok)throw new Error("http "+r.status);
@@ -424,7 +424,7 @@ async function translateViaGoogleMirror(text,from,to){
 async function translateViaMyMemory(text,from,to){
   const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
   const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),6000);
+  const timer=setTimeout(()=>ctl.abort(),10000);
   try{
     const r=await fetch(url,{signal:ctl.signal});
     if(!r.ok)throw new Error("http "+r.status);
@@ -479,30 +479,42 @@ function initTranslator(){
   let reqId=0;
   async function doTranslate(text){
     const id=++reqId;
-    try{
-      const t=await translateText(text,srcSel.value,dstSel.value);
-      if(id!==reqId)return;
-      note.textContent="";
-      addHist(text,t,srcSel.value,dstSel.value);
-      manual.blur();
-      if(document.activeElement)document.activeElement.blur();
-      if(histPanel.hidden){
-        histBtn.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
+    const MAX_TRIES=4;
+    for(let attempt=1;attempt<=MAX_TRIES;attempt++){
+      try{
+        const t=await translateText(text,srcSel.value,dstSel.value);
+        if(id!==reqId)return;
+        note.textContent="";
+        addHist(text,t,srcSel.value,dstSel.value);
+        manual.blur();
+        if(document.activeElement)document.activeElement.blur();
+        if(histPanel.hidden){
+          histBtn.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
+        }
+        renderHist();
+        requestAnimationFrame(()=>{
+          histPanel.scrollIntoView({block:"center",behavior:"smooth"});
+        });
+        manual.value="";
+        charCount.textContent="0";
+        return;
+      }catch(e){
+        if(id!==reqId)return;
+        if(attempt<MAX_TRIES){
+          note.textContent=`Réseau instable… nouvelle tentative ${attempt}/${MAX_TRIES-1} ⏳`;
+          await new Promise(r=>setTimeout(r,2500*attempt));
+          if(id!==reqId)return;
+        }else{
+          note.textContent="Traduction indisponible pour le moment 😕 — le texte reste dans le champ, réessaie dans quelques secondes.";
+        }
       }
-      renderHist();
-      requestAnimationFrame(()=>{
-        histPanel.scrollIntoView({block:"center",behavior:"smooth"});
-      });
-    }catch(e){
-      if(id!==reqId)return;
-      note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
     }
   }
 
   const manual=$("#manualText"),charCount=$("#charCount");
   const submitManual=()=>{
     const v=manual.value.trim();
-    if(v){reset();manual.value="";charCount.textContent="0";doTranslate(v)}
+    if(v){reset();doTranslate(v)}
   };
   $("#translateForm").addEventListener("submit",e=>{
     e.preventDefault();
