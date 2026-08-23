@@ -307,6 +307,11 @@ mark{background:rgba(237,187,0,.32);color:#ffe9a0;border-radius:3px;padding:0 2p
   border-radius:12px;
   padding:10px 12px;
 }
+.h-list .h-item:first-child{animation:hNew 1.4s ease}
+@keyframes hNew{
+  0%{background:rgba(237,187,0,.2);border-color:rgba(237,187,0,.55)}
+  100%{background:var(--bg-soft);border-color:var(--line)}
+}
 .h-texts{flex:1;min-width:0}
 .h-src{font-weight:600;font-size:.9rem;word-break:break-word}
 .h-dst{color:var(--gold);font-weight:600;font-size:.88rem;margin-top:3px;word-break:break-word}

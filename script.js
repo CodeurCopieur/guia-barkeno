@@ -494,6 +494,8 @@ function initTranslator(){
       if(id!==reqId)return;
       note.textContent="";
       addHist(text,t,srcSel.value,dstSel.value);
+      histPanel.hidden=false;
+      renderHist();
     }catch(e){
       if(id!==reqId)return;
       note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
