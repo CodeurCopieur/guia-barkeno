@@ -19,6 +19,23 @@ const THEMES=[
   ["¿Puede repetir más despacio?","Pouvez-vous répéter plus lentement ?"],
   ["¿Habla inglés o francés?","Parlez-vous anglais ou français ?"]
  ]},
+ {id:"nous",icon:"🇫🇷",name:"Parler de nous",phrases:[
+  ["Buenas, somos una pareja francesa de vacaciones. Vamos a visitar la ciudad, pero no hablamos muy bien español.","Bonjour, nous sommes un couple français en vacances. On va visiter la ville, mais on ne parle pas très bien espagnol."],
+  ["Venimos de Francia","Nous venons de France"],
+  ["Venimos de Francia, de París","Nous venons de France, de Paris"],
+  ["Somos de París","Nous sommes de Paris"],
+  ["Estoy aquí con mi novia","Je suis ici avec ma compagne"],
+  ["Estoy aquí con mi novio","Je suis ici avec mon compagnon"],
+  ["Somos franceses y estamos aquí de vacaciones","Nous sommes français et nous sommes ici en vacances"],
+  ["Es nuestra primera vez en Barcelona","C'est notre première fois à Barcelone"],
+  ["Vamos a estar aquí una semana","Nous allons rester ici une semaine"],
+  ["Queremos visitar lugares bonitos de la ciudad","Nous voulons visiter des lieux sympas de la ville"],
+  ["¿Qué nos recomienda ver durante nuestras vacaciones?","Que nous recommandez-vous de voir pendant nos vacances ?"],
+  ["Lo siento, no hablamos muy bien español","Désolé, on ne parle pas très bien espagnol"],
+  ["Solo entendemos un poco de español","On ne comprend qu'un peu l'espagnol"],
+  ["Hemos aprendido algunas frases para hablar con la gente","Nous avons appris quelques phrases pour discuter avec les gens"],
+  ["Hablemos despacio, por favor","Parlons lentement, s'il vous plaît"]
+ ]},
  {id:"langue",icon:"🗣️",name:"Se faire comprendre",phrases:[
   ["Hablamos solo un poco de español","Nous ne parlons qu'un peu l'espagnol"],
   ["No hablamos bien español","Nous ne parlons pas très bien espagnol"],
@@ -151,6 +168,11 @@ const THEMES=[
 
 const ICON_STAR='<svg viewBox="0 0 24 24"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>';
 const ICON_SPEAK='<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+const ICON_PREV='<svg viewBox="0 0 24 24"><path d="M15.5 4l-8 8 8 8z"/></svg>';
+const ICON_NEXT='<svg viewBox="0 0 24 24"><path d="M8.5 4l8 8-8 8z"/></svg>';
+
+const PER_SLIDE=3;
+const chunk=(arr,n)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out};
 
 const state={theme:"all",favOnly:false,q:""};
 let favs=new Set(JSON.parse(localStorage.getItem("barcelone-favs")||"[]"));
@@ -256,7 +278,16 @@ function render(){
       }
     });
     if(rows.length){
-      html+=`<section><h2>${theme.icon} ${theme.name} <span class="n">${rows.length}</span></h2><div class="grid">${rows.join("")}</div></section>`;
+      const slides=chunk(rows,PER_SLIDE);
+      let slider=`<div class="slider">`;
+      if(slides.length>1)slider+=`<button type="button" class="s-nav prev" aria-label="Phrases précédentes">${ICON_PREV}</button>`;
+      slider+=`<div class="viewport"><div class="track">${slides.map(s=>`<div class="slide">${s.join("")}</div>`).join("")}</div></div>`;
+      if(slides.length>1){
+        slider+=`<button type="button" class="s-nav next" aria-label="Phrases suivantes">${ICON_NEXT}</button>`;
+        slider+=`<div class="s-dots">${slides.map((_,i)=>`<button type="button" class="s-dot${i===0?" on":""}" aria-label="Page ${i+1}"></button>`).join("")}</div>`;
+      }
+      slider+=`</div>`;
+      html+=`<section><h2>${theme.icon} ${theme.name} <span class="n">${rows.length}</span></h2>${slider}</section>`;
     }
   });
   $("#content").innerHTML=total?html:`<div class="empty"><div class="big">🔍</div>Aucune phrase trouvée.<br>Essaie un autre mot.</div>`;
@@ -267,6 +298,37 @@ function render(){
       toggleFav(b.dataset.key,b);
       if(state.favOnly)render();
     };
+  });
+  initSliders();
+}
+
+function initSliders(){
+  document.querySelectorAll(".slider").forEach(sl=>{
+    const track=sl.querySelector(".track");
+    const n=track.children.length;
+    if(n<2)return;
+    const prev=sl.querySelector(".prev"),next=sl.querySelector(".next"),
+          dots=[...sl.querySelectorAll(".s-dot")];
+    let idx=0;
+    const go=i=>{
+      idx=Math.max(0,Math.min(n-1,i));
+      track.style.transform=`translateX(-${idx*100}%)`;
+      prev.disabled=idx===0;
+      next.disabled=idx===n-1;
+      dots.forEach((d,j)=>d.classList.toggle("on",j===idx));
+    };
+    prev.onclick=()=>go(idx-1);
+    next.onclick=()=>go(idx+1);
+    dots.forEach((d,j)=>d.onclick=()=>go(j));
+    let sx=null,sy=null;
+    sl.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+    sl.addEventListener("touchend",e=>{
+      if(sx==null)return;
+      const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+      if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5)(dx<0?go(idx+1):go(idx-1));
+      sx=null;sy=null;
+    },{passive:true});
+    go(0);
   });
 }
 

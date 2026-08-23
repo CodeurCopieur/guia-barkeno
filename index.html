@@ -26,8 +26,12 @@
 
 <main>
   <section class="translator">
-    <h2>🎤 Traducteur vocal</h2>
-    <div class="t-card">
+    <details class="acc" id="translatorAcc">
+      <summary aria-label="Ouvrir ou fermer le traducteur vocal">
+        <h2>🎤 Traducteur vocal</h2>
+        <span class="acc-icon" aria-hidden="true"></span>
+      </summary>
+      <div class="t-card">
       <div class="t-langs">
         <select id="srcLang" aria-label="Langue source"></select>
         <button id="swapLangs" type="button" class="btn" aria-label="Inverser les langues">⇄</button>
@@ -50,7 +54,8 @@
         <button id="translateBtn" type="button">Traduire</button>
       </div>
       <p class="t-note" id="tNote"></p>
-    </div>
+      </div>
+    </details>
   </section>
 
   <p class="count" id="count"></p>
