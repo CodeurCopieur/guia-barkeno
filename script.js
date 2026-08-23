@@ -580,9 +580,7 @@ function initTranslator(){
   recBtn.onclick=()=>recording?stopRec():startRec();
 
   const manual=$("#manualText"),charCount=$("#charCount");
-  let liveTimer=null;
   const submitManual=()=>{
-    clearTimeout(liveTimer);
     const v=manual.value.trim();
     if(v){reset();manual.value="";charCount.textContent="0";doTranslate(v)}
   };
@@ -590,13 +588,7 @@ function initTranslator(){
     e.preventDefault();
     submitManual();
   });
-  manual.addEventListener("input",()=>{
-    charCount.textContent=manual.value.length;
-    clearTimeout(liveTimer);
-    const v=manual.value.trim();
-    if(v.length<2)return;
-    liveTimer=setTimeout(()=>{if(manual.value.trim()===v)doTranslate(v)},700);
-  });
+  manual.addEventListener("input",()=>{charCount.textContent=manual.value.length});
   manual.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();submitManual()}
   });
