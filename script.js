@@ -393,7 +393,21 @@ function speakText(text,lang){
   speechSynthesis.speak(u);
 }
 
-async function translateText(text,from,to){
+async function translateViaGoogle(text,from,to){
+  const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const r=await fetch(url,{signal:ctl.signal});
+    if(!r.ok)throw new Error("http "+r.status);
+    const j=await r.json();
+    const t=j&&j[0]?j[0].map(seg=>seg&&seg[0]?seg[0]:"").join(""):"";
+    if(!t)throw new Error("no translation");
+    return t;
+  }finally{clearTimeout(timer)}
+}
+
+async function translateViaMyMemory(text,from,to){
   const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
   const ctl=new AbortController();
   const timer=setTimeout(()=>ctl.abort(),8000);
@@ -405,6 +419,14 @@ async function translateText(text,from,to){
     if(!t||/MYMEMORY WARNING/i.test(t))throw new Error("no translation");
     return t;
   }finally{clearTimeout(timer)}
+}
+
+async function translateText(text,from,to){
+  try{
+    return await translateViaGoogle(text,from,to);
+  }catch(e){
+    return await translateViaMyMemory(text,from,to);
+  }
 }
 
 function initTranslator(){
@@ -445,7 +467,7 @@ function initTranslator(){
       $("#sayTranslated").onclick=()=>speakText(translatedEl.textContent,LANGS[dstSel.value].locale);
       addHist(text,translatedEl.textContent,srcSel.value,dstSel.value);
     }catch(e){
-      translatedEl.textContent="Traduction indisponible pour le moment 😕";
+      translatedEl.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
     }
   }
 
