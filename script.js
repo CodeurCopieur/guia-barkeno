@@ -484,16 +484,9 @@ function initTranslator(){
       if(id!==reqId)return;
       note.textContent="";
       addHist(text,t,srcSel.value,dstSel.value);
-      const reopen=()=>{
-        renderHist();
-        histPanel.hidden=false;
-        setTimeout(()=>histPanel.scrollIntoView({block:"nearest",behavior:"smooth"}),80);
-      };
-      if(histPanel.hidden)reopen();
-      else{
-        histPanel.hidden=true;
-        setTimeout(reopen,180);
-      }
+      renderHist();
+      histPanel.hidden=false;
+      setTimeout(()=>histPanel.scrollIntoView({block:"nearest",behavior:"smooth"}),80);
     }catch(e){
       if(id!==reqId)return;
       note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
