@@ -484,9 +484,10 @@ function initTranslator(){
       if(id!==reqId)return;
       note.textContent="";
       addHist(text,t,srcSel.value,dstSel.value);
-      renderHist();
-      histPanel.hidden=false;
-      setTimeout(()=>histPanel.scrollIntoView({block:"nearest",behavior:"smooth"}),80);
+      const clickHist=()=>histBtn.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
+      if(!histPanel.hidden)clickHist();
+      setTimeout(clickHist,120);
+      setTimeout(()=>histPanel.scrollIntoView({block:"nearest",behavior:"smooth"}),200);
     }catch(e){
       if(id!==reqId)return;
       note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
