@@ -312,7 +312,7 @@ async function translateText(text,from,to){
 
 function initTranslator(){
   const srcSel=$("#srcLang"),dstSel=$("#dstLang"),recBtn=$("#recBtn"),
-        status=$("#recStatus"),playback=$("#playback"),tResult=$("#tResult"),
+        status=$("#recStatus"),tResult=$("#tResult"),
         heard=$("#heardText"),translatedEl=$("#translatedText"),note=$("#tNote");
   Object.entries(LANGS).forEach(([code,l])=>{
     srcSel.add(new Option(l.label,code));
@@ -326,8 +326,8 @@ function initTranslator(){
   $("#sayHeard").onclick=()=>speakText(heard.textContent,LANGS[srcSel.value].locale);
 
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  let recording=false,stream=null,recorder=null,chunks=[],recognition=null,
-      finalText="",fatal=false,silenceTimer=null;
+  let recording=false,recognition=null,
+      finalText="",fatal=false,silenceTimer=null,gotAny=false,watchdog=null;
 
   const armSilence=()=>{
     clearTimeout(silenceTimer);
@@ -336,7 +336,7 @@ function initTranslator(){
 
   function reset(){
     tResult.hidden=true;heard.textContent="";translatedEl.textContent="";
-    playback.hidden=true;playback.removeAttribute("src");note.textContent="";
+    note.textContent="";
   }
 
   async function doTranslate(text){
@@ -351,86 +351,72 @@ function initTranslator(){
     }
   }
 
-  async function startRec(){
+  function startRec(){
     reset();
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    }catch(e){
-      status.textContent="Micro inaccessible : autorisez le micro dans le navigateur.";
-      return;
-    }
-    chunks=[];finalText="";fatal=false;
-    clearTimeout(silenceTimer);
-    try{
-      recorder=new MediaRecorder(stream);
-      const mr=recorder;
-      mr.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-      mr.onstop=()=>{
-        if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-        if(chunks.length){
-          playback.src=URL.createObjectURL(new Blob(chunks,{type:mr.mimeType||"audio/webm"}));
-          playback.hidden=false;
-        }
-      };
-      mr.start();
-    }catch(e){
-      status.textContent="Enregistrement audio non supporté par ce navigateur.";
+    if("speechSynthesis" in window)window.speechSynthesis.cancel();
+    finalText="";fatal=false;gotAny=false;
+    clearTimeout(silenceTimer);clearTimeout(watchdog);
+    if(!SR){
+      note.textContent="La transcription vocale nécessite Chrome, Edge ou Safari récent. Vous pouvez aussi taper votre phrase ci-dessous.";
+      status.textContent="Transcription vocale non supportée par ce navigateur.";
       return;
     }
     recording=true;
     recBtn.classList.add("recording");
     recBtn.textContent="⏹ Arrêter et traduire";
-    status.textContent=SR?"J'écoute… La traduction partira dès que vous vous taisez.":"Enregistrement… (transcription non supportée ici, essayez Chrome)";
-    if(SR){
-      recognition=new SR();
-      recognition.lang=LANGS[srcSel.value].locale;
-      recognition.interimResults=true;
-      recognition.continuous=true;
-      heard.textContent="…";
-      tResult.hidden=false;
-      recognition.onresult=e=>{
-        let interim="";
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const t=e.results[i][0].transcript;
-          e.results[i].isFinal?finalText+=t+" ":interim+=t;
-        }
-        const full=(finalText+interim).trim();
-        heard.textContent=full||"…";
-        if(full)armSilence();
+    status.textContent="J'écoute… La traduction partira dès que vous vous taisez.";
+    heard.textContent="…";
+    tResult.hidden=false;
+    recognition=new SR();
+    recognition.lang=LANGS[srcSel.value].locale;
+    recognition.interimResults=true;
+    recognition.continuous=true;
+    recognition.maxAlternatives=1;
+    recognition.onresult=e=>{
+      gotAny=true;
+      let interim="";
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        e.results[i].isFinal?finalText+=t+" ":interim+=t;
+      }
+      const full=(finalText+interim).trim();
+      heard.textContent=full||"…";
+      if(full)armSilence();
+    };
+    recognition.onerror=e=>{
+      const msgs={
+        "not-allowed":"Micro refusé : autorisez le micro pour ce site dans les réglages du navigateur.",
+        "service-not-allowed":"Service de reconnaissance vocale indisponible.",
+        "audio-capture":"Micro indisponible.",
+        "network":"Réseau bloqué : la reconnaissance vocale nécessite Internet.",
+        "no-speech":"Aucune voix détectée.",
+        "language-not-supported":"Dictée indisponible dans cette langue sur cet appareil. Sur iPhone : Réglages → Général → Clavier → Dictées → ajoutez la langue."
       };
-      recognition.onerror=e=>{
-        const msgs={
-          "not-allowed":"Micro refusé pour la transcription.",
-          "service-not-allowed":"Service de reconnaissance vocale indisponible.",
-          "audio-capture":"Micro indisponible.",
-          "network":"Réseau bloqué : la reconnaissance vocale nécessite Internet.",
-          "no-speech":"Aucune voix détectée."
-        };
-        if(msgs[e.error])status.textContent=msgs[e.error];
-        if(["not-allowed","service-not-allowed","audio-capture","network"].includes(e.error))fatal=true;
-      };
-      recognition.onend=()=>{
-        if(recording&&!fatal&&recognition){try{recognition.start()}catch(e){}}
-      };
-      try{recognition.start()}catch(e){}
-    }else{
-      note.textContent="La transcription vocale nécessite Chrome ou Edge. Vous pouvez aussi taper votre phrase ci-dessous.";
-    }
+      if(msgs[e.error])status.textContent=msgs[e.error];
+      if(["not-allowed","service-not-allowed","audio-capture","network","language-not-supported"].includes(e.error))fatal=true;
+    };
+    recognition.onend=()=>{
+      if(recording&&!fatal&&recognition){try{recognition.start()}catch(e){}}
+    };
+    watchdog=setTimeout(()=>{
+      if(recording&&!gotAny&&!fatal){
+        fatal=true;
+        stopRec();
+      }
+    },8000);
+    try{recognition.start()}catch(e){}
   }
 
   function stopRec(){
     recording=false;
-    clearTimeout(silenceTimer);
+    clearTimeout(silenceTimer);clearTimeout(watchdog);
     recBtn.classList.remove("recording");
     recBtn.textContent="🎤 Appuyer pour parler";
-    status.textContent="";
     if(recognition){try{recognition.stop()}catch(e){}recognition=null}
-    if(recorder&&recorder.state!=="inactive")recorder.stop();
-    recorder=null;
     const heardTxt=heard.textContent.trim();
     const txt=finalText.trim()||(heardTxt&&heardTxt!=="…"?heardTxt:"");
     if(txt)doTranslate(txt);
-    else status.textContent="Aucune phrase détectée — réessayez ou écrivez-la ci-dessous.";
+    else if(!status.textContent)status.textContent="Aucune phrase détectée — réessayez ou écrivez-la ci-dessous.";
   }
 
   recBtn.onclick=()=>recording?stopRec():startRec();
