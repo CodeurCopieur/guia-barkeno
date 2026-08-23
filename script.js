@@ -407,6 +407,20 @@ async function translateViaGoogle(text,from,to){
   }finally{clearTimeout(timer)}
 }
 
+async function translateViaGoogleMirror(text,from,to){
+  const url=`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&q=${encodeURIComponent(text)}`;
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const r=await fetch(url,{signal:ctl.signal});
+    if(!r.ok)throw new Error("http "+r.status);
+    const j=await r.json();
+    const flat=(Array.isArray(j)?j:[j]).map(x=>Array.isArray(x)?x.join(""):String(x)).join("");
+    if(!flat)throw new Error("no translation");
+    return flat;
+  }finally{clearTimeout(timer)}
+}
+
 async function translateViaMyMemory(text,from,to){
   const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
   const ctl=new AbortController();
@@ -421,12 +435,31 @@ async function translateViaMyMemory(text,from,to){
   }finally{clearTimeout(timer)}
 }
 
+const T_CACHE_MAX=200;
+let tCache={};
+try{tCache=JSON.parse(localStorage.getItem("barcelone-tcache")||"{}")}catch(e){tCache={}}
+const cacheKey=(text,from,to)=>norm(text)+"|"+from+"|"+to;
+function saveTCache(){
+  try{localStorage.setItem("barcelone-tcache",JSON.stringify(tCache))}
+  catch(e){tCache={};try{localStorage.setItem("barcelone-tcache","{}")}catch(_){}}
+}
+
 async function translateText(text,from,to){
-  try{
-    return await translateViaGoogle(text,from,to);
-  }catch(e){
-    return await translateViaMyMemory(text,from,to);
+  const k=cacheKey(text,from,to);
+  if(tCache[k])return tCache[k];
+  const providers=[translateViaGoogle,translateViaGoogleMirror,translateViaMyMemory];
+  let lastErr=null;
+  for(const p of providers){
+    try{
+      const t=await p(text,from,to);
+      tCache[k]=t;
+      const keys=Object.keys(tCache);
+      while(keys.length>T_CACHE_MAX)delete tCache[keys.shift()];
+      saveTCache();
+      return t;
+    }catch(e){lastErr=e}
   }
+  throw lastErr||new Error("no translation available");
 }
 
 function initTranslator(){
