@@ -464,18 +464,14 @@ async function translateText(text,from,to){
 
 function initTranslator(){
   const srcSel=$("#srcLang"),dstSel=$("#dstLang"),recBtn=$("#recBtn"),
-        status=$("#recStatus"),tResult=$("#tResult"),
-        heard=$("#heardText"),translatedEl=$("#translatedText"),note=$("#tNote");
+        status=$("#recStatus"),note=$("#tNote");
   Object.entries(LANGS).forEach(([code,l])=>{
     srcSel.add(new Option(l.label,code));
     dstSel.add(new Option(l.label,code));
   });
   srcSel.value="fr";dstSel.value="es";
-  $("#sayHeard").innerHTML=ICON_SPEAK;
-  $("#sayTranslated").innerHTML=ICON_SPEAK;
 
   $("#swapLangs").onclick=()=>{[srcSel.value,dstSel.value]=[dstSel.value,srcSel.value]};
-  $("#sayHeard").onclick=()=>speakText(heard.textContent,LANGS[srcSel.value].locale);
 
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   let recording=false,recognition=null,
@@ -487,25 +483,20 @@ function initTranslator(){
   };
 
   function reset(){
-    tResult.hidden=true;heard.textContent="";translatedEl.textContent="";
     note.textContent="";
   }
 
   let reqId=0;
   async function doTranslate(text){
     const id=++reqId;
-    heard.textContent=text;
-    translatedEl.textContent="…";
-    tResult.hidden=false;
     try{
       const t=await translateText(text,srcSel.value,dstSel.value);
       if(id!==reqId)return;
-      translatedEl.textContent=t;
-      $("#sayTranslated").onclick=()=>speakText(translatedEl.textContent,LANGS[dstSel.value].locale);
+      note.textContent="";
       addHist(text,t,srcSel.value,dstSel.value);
     }catch(e){
       if(id!==reqId)return;
-      translatedEl.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
+      note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
     }
   }
 
@@ -523,8 +514,6 @@ function initTranslator(){
     recBtn.classList.add("recording");
     recBtn.textContent="⏹ Arrêter et traduire";
     status.textContent="J'écoute… La traduction partira dès que vous vous taisez.";
-    heard.textContent="…";
-    tResult.hidden=false;
     recognition=new SR();
     recognition.lang=LANGS[srcSel.value].locale;
     recognition.interimResults=true;
@@ -571,8 +560,7 @@ function initTranslator(){
     recBtn.classList.remove("recording");
     recBtn.textContent="🎤 Appuyer pour parler";
     if(recognition){try{recognition.stop()}catch(e){}recognition=null}
-    const heardTxt=heard.textContent.trim();
-    const txt=finalText.trim()||(heardTxt&&heardTxt!=="…"?heardTxt:"");
+    const txt=finalText.trim();
     if(txt)doTranslate(txt);
     else if(!status.textContent)status.textContent="Aucune phrase détectée — réessayez ou écrivez-la ci-dessous.";
   }
