@@ -491,15 +491,20 @@ function initTranslator(){
     note.textContent="";
   }
 
+  let reqId=0;
   async function doTranslate(text){
+    const id=++reqId;
     heard.textContent=text;
     translatedEl.textContent="…";
     tResult.hidden=false;
     try{
-      translatedEl.textContent=await translateText(text,srcSel.value,dstSel.value);
+      const t=await translateText(text,srcSel.value,dstSel.value);
+      if(id!==reqId)return;
+      translatedEl.textContent=t;
       $("#sayTranslated").onclick=()=>speakText(translatedEl.textContent,LANGS[dstSel.value].locale);
-      addHist(text,translatedEl.textContent,srcSel.value,dstSel.value);
+      addHist(text,t,srcSel.value,dstSel.value);
     }catch(e){
+      if(id!==reqId)return;
       translatedEl.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
     }
   }
