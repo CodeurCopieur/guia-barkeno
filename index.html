@@ -38,8 +38,8 @@
         <select id="dstLang" aria-label="Langue cible"></select>
       </div>
       <button id="recBtn" type="button" class="rec-btn">🎤 Appuyer pour parler</button>
-      <p class="t-status" id="recStatus"></p>
-      <div class="t-result" id="tResult" hidden>
+      <p class="t-status" id="recStatus" role="status" aria-live="polite"></p>
+      <div class="t-result" id="tResult" aria-live="polite" hidden>
         <div class="t-row">
           <p class="t-heard" id="heardText"></p>
           <button class="btn say" id="sayHeard" aria-label="Écouter la phrase entendue"></button>
@@ -49,16 +49,20 @@
           <button class="btn say" id="sayTranslated" aria-label="Écouter la traduction"></button>
         </div>
       </div>
-      <div class="t-manual">
-        <input id="manualText" type="text" placeholder="…ou tapez une phrase à traduire" autocomplete="off">
-        <button id="translateBtn" type="button">Traduire</button>
-      </div>
+      <form class="t-form" id="translateForm" novalidate>
+        <label class="t-label" for="manualText">Ou écrivez votre phrase ✍️</label>
+        <textarea id="manualText" name="phrase" rows="4" placeholder="Tapez votre phrase à traduire…" autocomplete="off"></textarea>
+        <div class="t-field-foot">
+          <span class="t-char" id="charCount" aria-live="polite">0</span>
+          <button type="submit" class="t-submit"><span>Traduire la phrase</span></button>
+        </div>
+      </form>
       <p class="t-note" id="tNote"></p>
       </div>
     </details>
   </section>
 
-  <p class="count" id="count"></p>
+  <p class="count" id="count" role="status" aria-live="polite"></p>
   <div id="content"></div>
 </main>
 

@@ -65,7 +65,11 @@ const THEMES=[
   ["Estamos de vacaciones","Nous sommes en vacances"],
   ["Encantados de conocerte","Enchantés de te rencontrer"],
   ["¿Nos puede ayudar?","Pouvez-vous nous aider ?"],
-  ["Estamos buscando…","Nous cherchons…"],
+  ["Busco…","Je cherche…"],
+  ["Estamos buscando un restaurante","Nous cherchons un restaurant"],
+  ["¿Dónde se encuentra…?","Où se trouve… ?"],
+  ["¿Dónde puedo comprar agua?","Où puis-je acheter de l'eau ?"],
+  ["¿Dónde está la salida?","Où est la sortie ?"],
   ["De acuerdo","D'accord"],
   ["Claro que sí","Bien sûr"],
   ["Un momento","Un instant"],
@@ -491,13 +495,19 @@ function initTranslator(){
 
   recBtn.onclick=()=>recording?stopRec():startRec();
 
-  const manual=$("#manualText");
+  const manual=$("#manualText"),charCount=$("#charCount");
   const submitManual=()=>{
     const v=manual.value.trim();
-    if(v){reset();manual.value="";doTranslate(v)}
+    if(v){reset();manual.value="";charCount.textContent="0";doTranslate(v)}
   };
-  $("#translateBtn").onclick=submitManual;
-  manual.addEventListener("keydown",e=>{if(e.key==="Enter")submitManual()});
+  $("#translateForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    submitManual();
+  });
+  manual.addEventListener("input",()=>{charCount.textContent=manual.value.length});
+  manual.addEventListener("keydown",e=>{
+    if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();submitManual()}
+  });
 }
 
 initNav();
