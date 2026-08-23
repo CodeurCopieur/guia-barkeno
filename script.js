@@ -191,12 +191,27 @@ const chunk=(arr,n)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.sl
 
 const state={theme:"none",favOnly:false,q:""};
 let favs=new Set(JSON.parse(localStorage.getItem("barcelone-favs")||"[]"));
+const HIST_MAX=50;
+let hist=JSON.parse(localStorage.getItem("barcelone-hist")||"[]");
 
 const $=s=>document.querySelector(s);
 const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 
 function saveFavs(){localStorage.setItem("barcelone-favs",JSON.stringify([...favs]))}
+
+function saveHist(){
+  try{localStorage.setItem("barcelone-hist",JSON.stringify(hist))}
+  catch(e){hist=hist.slice(0,Math.floor(hist.length/2));try{localStorage.setItem("barcelone-hist",JSON.stringify(hist))}catch(_){}}
+}
+function addHist(src,dst,from,to){
+  if(!dst||/indisponible/i.test(dst))return;
+  if(hist[0]&&hist[0].src===src&&hist[0].dst===dst)return;
+  hist.unshift({src,dst,from,to,t:Date.now()});
+  hist=hist.slice(0,HIST_MAX);
+  saveHist();
+  renderHist();
+}
 
 function hi(text,q){
   if(!q)return esc(text);
@@ -428,6 +443,7 @@ function initTranslator(){
     try{
       translatedEl.textContent=await translateText(text,srcSel.value,dstSel.value);
       $("#sayTranslated").onclick=()=>speakText(translatedEl.textContent,LANGS[dstSel.value].locale);
+      addHist(text,translatedEl.textContent,srcSel.value,dstSel.value);
     }catch(e){
       translatedEl.textContent="Traduction indisponible pour le moment 😕";
     }
@@ -516,6 +532,53 @@ function initTranslator(){
   manual.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();submitManual()}
   });
+
+  const histBtn=$("#histBtn"),histCount=$("#histCount"),
+        histPanel=$("#tHistory"),histList=$("#histList"),histClear=$("#histClear");
+
+  function renderHist(){
+    const esc2=esc;
+    if(!hist.length){
+      histList.innerHTML=`<p class="h-empty">Aucune traduction enregistrée pour le moment.</p>`;
+      histClear.hidden=true;
+      histCount.hidden=true;
+      return;
+    }
+    histList.innerHTML=hist.map((h,i)=>`
+      <div class="h-item">
+        <div class="h-texts">
+          <p class="h-src">${esc2(h.src)}</p>
+          <p class="h-dst">${esc2(h.dst)}</p>
+        </div>
+        <button type="button" class="btn h-del" data-i="${i}" aria-label="Supprimer cette traduction">×</button>
+      </div>`).join("");
+    histClear.hidden=false;
+    histCount.textContent=hist.length;
+    histCount.hidden=false;
+  }
+
+  histBtn.onclick=()=>{
+    histPanel.hidden=!histPanel.hidden;
+    if(!histPanel.hidden)renderHist();
+  };
+
+  histList.addEventListener("click",e=>{
+    const del=e.target.closest(".h-del");
+    if(!del)return;
+    hist.splice(+del.dataset.i,1);
+    saveHist();
+    renderHist();
+  });
+
+  histClear.onclick=()=>{
+    if(confirm("Supprimer tout l'historique des traductions ?")){
+      hist=[];
+      saveHist();
+      renderHist();
+    }
+  };
+
+  renderHist();
 }
 
 initNav();
