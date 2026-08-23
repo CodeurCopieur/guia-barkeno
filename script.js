@@ -484,12 +484,15 @@ function initTranslator(){
       if(id!==reqId)return;
       note.textContent="";
       addHist(text,t,srcSel.value,dstSel.value);
+      manual.blur();
+      if(document.activeElement)document.activeElement.blur();
       if(histPanel.hidden){
         histBtn.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
-      }else{
-        renderHist();
       }
-      histPanel.scrollIntoView({block:"nearest",behavior:"smooth"});
+      renderHist();
+      requestAnimationFrame(()=>{
+        histPanel.scrollIntoView({block:"center",behavior:"smooth"});
+      });
     }catch(e){
       if(id!==reqId)return;
       note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
