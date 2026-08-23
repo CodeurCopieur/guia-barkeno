@@ -12,6 +12,7 @@
   --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
 ::selection{background:rgba(237,187,0,.35);color:#fff}
 html{scroll-behavior:smooth}

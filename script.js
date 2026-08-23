@@ -496,6 +496,7 @@ function initTranslator(){
       addHist(text,t,srcSel.value,dstSel.value);
       histPanel.hidden=false;
       renderHist();
+      setTimeout(()=>histPanel.scrollIntoView({block:"nearest",behavior:"smooth"}),60);
     }catch(e){
       if(id!==reqId)return;
       note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
