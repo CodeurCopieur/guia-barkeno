@@ -396,7 +396,7 @@ function speakText(text,lang){
 async function translateViaGoogle(text,from,to){
   const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
   const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),8000);
+  const timer=setTimeout(()=>ctl.abort(),6000);
   try{
     const r=await fetch(url,{signal:ctl.signal});
     if(!r.ok)throw new Error("http "+r.status);
@@ -410,7 +410,7 @@ async function translateViaGoogle(text,from,to){
 async function translateViaGoogleMirror(text,from,to){
   const url=`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&q=${encodeURIComponent(text)}`;
   const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),8000);
+  const timer=setTimeout(()=>ctl.abort(),6000);
   try{
     const r=await fetch(url,{signal:ctl.signal});
     if(!r.ok)throw new Error("http "+r.status);
@@ -424,7 +424,7 @@ async function translateViaGoogleMirror(text,from,to){
 async function translateViaMyMemory(text,from,to){
   const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
   const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),8000);
+  const timer=setTimeout(()=>ctl.abort(),6000);
   try{
     const r=await fetch(url,{signal:ctl.signal});
     if(!r.ok)throw new Error("http "+r.status);
@@ -447,7 +447,7 @@ function saveTCache(){
 async function translateText(text,from,to){
   const k=cacheKey(text,from,to);
   if(tCache[k])return tCache[k];
-  const providers=[translateViaGoogle,translateViaGoogleMirror,translateViaMyMemory];
+  const providers=[translateViaGoogleMirror,translateViaGoogle,translateViaMyMemory];
   let lastErr=null;
   for(const p of providers){
     try{
@@ -580,7 +580,9 @@ function initTranslator(){
   recBtn.onclick=()=>recording?stopRec():startRec();
 
   const manual=$("#manualText"),charCount=$("#charCount");
+  let liveTimer=null;
   const submitManual=()=>{
+    clearTimeout(liveTimer);
     const v=manual.value.trim();
     if(v){reset();manual.value="";charCount.textContent="0";doTranslate(v)}
   };
@@ -588,7 +590,13 @@ function initTranslator(){
     e.preventDefault();
     submitManual();
   });
-  manual.addEventListener("input",()=>{charCount.textContent=manual.value.length});
+  manual.addEventListener("input",()=>{
+    charCount.textContent=manual.value.length;
+    clearTimeout(liveTimer);
+    const v=manual.value.trim();
+    if(v.length<2)return;
+    liveTimer=setTimeout(()=>{if(manual.value.trim()===v)doTranslate(v)},700);
+  });
   manual.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();submitManual()}
   });
