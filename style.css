@@ -328,8 +328,8 @@ mark{background:rgba(237,187,0,.32);color:#ffe9a0;border-radius:3px;padding:0 2p
 }
 .h-del:hover{color:#ff8fb4;border-color:rgba(165,0,68,.5)}
 .h-empty{color:var(--muted);font-size:.85rem;text-align:center;padding:6px 0}
+.h-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .hist-clear{
-  align-self:center;
   padding:7px 16px;
   border-radius:999px;
   border:1px solid rgba(165,0,68,.5);

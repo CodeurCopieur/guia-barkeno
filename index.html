@@ -52,7 +52,10 @@
       <button id="histBtn" type="button" class="hist-btn">🕘 Historique des traductions <span class="h-count" id="histCount" hidden>0</span></button>
       <div class="t-history" id="tHistory" hidden>
         <div class="h-list" id="histList"></div>
-        <button id="histClear" type="button" class="hist-clear" hidden>Tout supprimer</button>
+        <div class="h-actions">
+          <button id="histClear" type="button" class="hist-clear" hidden>Tout supprimer</button>
+          <button id="cacheClear" type="button" class="hist-clear">Vider le cache</button>
+        </div>
       </div>
       <form class="t-form" id="translateForm" novalidate>
         <label class="t-label" for="manualText">Ou écrivez votre phrase ✍️</label>

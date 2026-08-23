@@ -646,6 +646,12 @@ function initTranslator(){
     }
   };
 
+  $("#cacheClear").onclick=()=>{
+    tCache={};
+    saveTCache();
+    alert("Cache des traductions vidé ✅");
+  };
+
   renderHist();
 }
 
