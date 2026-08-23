@@ -463,8 +463,7 @@ async function translateText(text,from,to){
 }
 
 function initTranslator(){
-  const srcSel=$("#srcLang"),dstSel=$("#dstLang"),recBtn=$("#recBtn"),
-        status=$("#recStatus"),note=$("#tNote");
+  const srcSel=$("#srcLang"),dstSel=$("#dstLang"),note=$("#tNote");
   Object.entries(LANGS).forEach(([code,l])=>{
     srcSel.add(new Option(l.label,code));
     dstSel.add(new Option(l.label,code));
@@ -472,15 +471,6 @@ function initTranslator(){
   srcSel.value="fr";dstSel.value="es";
 
   $("#swapLangs").onclick=()=>{[srcSel.value,dstSel.value]=[dstSel.value,srcSel.value]};
-
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  let recording=false,recognition=null,
-      finalText="",fatal=false,silenceTimer=null,gotAny=false,watchdog=null;
-
-  const armSilence=()=>{
-    clearTimeout(silenceTimer);
-    silenceTimer=setTimeout(()=>{if(recording)stopRec()},1500);
-  };
 
   function reset(){
     note.textContent="";
@@ -502,73 +492,6 @@ function initTranslator(){
       note.textContent="Traduction indisponible — vérifiez votre connexion Internet 😕";
     }
   }
-
-  function startRec(){
-    reset();
-    if("speechSynthesis" in window)window.speechSynthesis.cancel();
-    finalText="";fatal=false;gotAny=false;
-    clearTimeout(silenceTimer);clearTimeout(watchdog);
-    if(!SR){
-      note.textContent="La transcription vocale nécessite Chrome, Edge ou Safari récent. Vous pouvez aussi taper votre phrase ci-dessous.";
-      status.textContent="Transcription vocale non supportée par ce navigateur.";
-      return;
-    }
-    recording=true;
-    recBtn.classList.add("recording");
-    recBtn.textContent="⏹ Arrêter et traduire";
-    status.textContent="J'écoute… La traduction partira dès que vous vous taisez.";
-    recognition=new SR();
-    recognition.lang=LANGS[srcSel.value].locale;
-    recognition.interimResults=true;
-    recognition.continuous=true;
-    recognition.maxAlternatives=1;
-    recognition.onresult=e=>{
-      gotAny=true;
-      let interim="";
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        const t=e.results[i][0].transcript;
-        e.results[i].isFinal?finalText+=t+" ":interim+=t;
-      }
-      const full=(finalText+interim).trim();
-      heard.textContent=full||"…";
-      if(full)armSilence();
-    };
-    recognition.onerror=e=>{
-      const msgs={
-        "not-allowed":"Micro refusé : autorisez le micro pour ce site dans les réglages du navigateur.",
-        "service-not-allowed":"Service de reconnaissance vocale indisponible.",
-        "audio-capture":"Micro indisponible.",
-        "network":"Réseau bloqué : la reconnaissance vocale nécessite Internet.",
-        "no-speech":"Aucune voix détectée.",
-        "language-not-supported":"Dictée indisponible dans cette langue sur cet appareil. Sur iPhone : Réglages → Général → Clavier → Dictées → ajoutez la langue."
-      };
-      if(msgs[e.error])status.textContent=msgs[e.error];
-      if(["not-allowed","service-not-allowed","audio-capture","network","language-not-supported"].includes(e.error))fatal=true;
-    };
-    recognition.onend=()=>{
-      if(recording&&!fatal&&recognition){try{recognition.start()}catch(e){}}
-    };
-    watchdog=setTimeout(()=>{
-      if(recording&&!gotAny&&!fatal){
-        fatal=true;
-        stopRec();
-      }
-    },8000);
-    try{recognition.start()}catch(e){}
-  }
-
-  function stopRec(){
-    recording=false;
-    clearTimeout(silenceTimer);clearTimeout(watchdog);
-    recBtn.classList.remove("recording");
-    recBtn.textContent="🎤 Appuyer pour parler";
-    if(recognition){try{recognition.stop()}catch(e){}recognition=null}
-    const txt=finalText.trim();
-    if(txt)doTranslate(txt);
-    else if(!status.textContent)status.textContent="Aucune phrase détectée — réessayez ou écrivez-la ci-dessous.";
-  }
-
-  recBtn.onclick=()=>recording?stopRec():startRec();
 
   const manual=$("#manualText"),charCount=$("#charCount");
   const submitManual=()=>{
