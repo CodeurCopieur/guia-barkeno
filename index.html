@@ -3,16 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#071022">
-<title>Barcelona · Phrases utiles</title>
+<meta name="theme-color" content="#050d1f">
+<meta name="description" content="Phrases utiles en espagnol (catalan) pour votre voyage à Barcelone avec traduction et prononciation vocale.">
+<title>Barcelona · Phrases essentielles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="hero">
-  <span class="badge">⚽ Visca el Barça</span>
-  <h1>Barcelona 🇪🇸</h1>
-  <p>Español → Français · touche 🔊 pour écouter la prononciation</p>
+  <span class="badge"><span class="dot" aria-hidden="true"></span>Visca el Barça</span>
+  <h1>Barcelona <span class="flag" aria-hidden="true">🇪🇸</span></h1>
+  <p class="lede">Español → Français · appuyez sur le haut-parleur 🔊 pour écouter la prononciation</p>
+  <div class="hero-stats" aria-hidden="true">
+    <span><strong id="statPhrases">0</strong> phrases</span>
+    <span><strong id="statThemes">0</strong> thèmes</span>
+    <span><strong id="statLangs">3</strong> langues</span>
+  </div>
 </header>
 
 <div class="toolbar">
@@ -63,8 +72,8 @@
 </main>
 
 <footer>
-  Astuce : les Espagnols apprécient qu'on commence par « Hola » et « Por favor ». 😊
-  <br><span class="sos">🚨 Urgences en Espagne : 112</span>
+  <p class="tip">Astuce : les Espagnols apprécient qu'on commence par « Hola » et « Por favor ». 😊</p>
+  <span class="sos"><span class="pulse" aria-hidden="true"></span>Urgences en Espagne : <strong>112</strong></span>
 </footer>
 
 <script src="script.js"></script>

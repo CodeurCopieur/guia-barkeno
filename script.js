@@ -607,3 +607,12 @@ initNav();
 initWheel();
 render();
 initTranslator();
+
+function initStats(){
+  const phrases=THEMES.reduce((a,t)=>a+t.phrases.length,0);
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+  set("statPhrases",phrases);
+  set("statThemes",THEMES.length);
+  set("statLangs",Object.keys(LANGS).length);
+}
+initStats();
