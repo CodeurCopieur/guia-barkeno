@@ -1,1 +1,10 @@
+node_modules/
+.nuxt/
+.output/
+.data/
+dist/
 tmp-test/
+*.log
+.DS_Store
+.idea/
+.vscode/
